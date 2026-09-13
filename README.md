@@ -69,4 +69,6 @@ For a click-through of every view, serve the project root (`npm start`) and open
 - MIDI input needs Chrome or Edge over HTTPS (GitHub Pages provides HTTPS) or on localhost.
 - The 3D kit loads Three.js from cdnjs the first time it is opened. Song search and tempo detection from a preview need an internet connection; everything else works offline once loaded.
 - Progress is stored in the visitor's own browser (localStorage). Export and import from the Practice tab.
+- Every view has its own URL, for example `#/play` or `#/songs`, so the back button and bookmarks work.
+- The look is deliberately old: serif text, typewriter labels, paper for notation. No web fonts or images; it is all CSS.
 - All exercises are original. Named drummers are described, not transcribed.

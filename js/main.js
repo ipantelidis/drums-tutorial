@@ -1,7 +1,7 @@
 // Entry point: wire views to their renderers, initialise every feature, open the first groove.
 import { State } from './core/state.js';
 import { Speech } from './core/speech.js';
-import { initNav, onView } from './core/nav.js';
+import { initNav, onView, openInitialView } from './core/nav.js';
 import { Player } from './features/player.js';
 import './features/metronome.js';
 import './features/scoring.js';
@@ -25,4 +25,5 @@ renderTheory(); renderTechnique(); renderMistakes(); renderReading(); renderRhyt
 initQuizzes(); initPractice(); initSongs();
 State.renderXP();
 Player.open('rock1');
+openInitialView();
 document.getElementById('voice-on').addEventListener('change', e => { if (e.target.checked) Speech.say('Voice on. I will count with you and read sections aloud when you ask.'); else Speech.stop(); });
