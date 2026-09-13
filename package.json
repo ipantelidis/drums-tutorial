@@ -1,0 +1,12 @@
+{
+  "name": "rock-drum-course",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Interactive rock drum course that runs as a static site. No build step.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve -l 8080 .",
+    "check": "node --check js/main.js js/core/*.js js/data/*.js js/render/*.js js/features/*.js",
+    "test": "node test/tempo-detect.test.mjs"
+  }
+}

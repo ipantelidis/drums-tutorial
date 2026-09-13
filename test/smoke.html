@@ -1,0 +1,45 @@
+<!DOCTYPE html><meta charset="utf-8"><title>smoke</title>
+<!-- Browser smoke test. Serve the project root (npm start) and open /test/smoke.html; every line should read "ok". -->
+<pre id="out">starting</pre>
+<iframe id="f" src="/index.html" style="width:1200px;height:900px"></iframe>
+<script>
+const out = []; const log = m => { out.push(m); document.getElementById('out').textContent = out.join('\n'); };
+const f = document.getElementById('f');
+f.addEventListener('load', () => {
+  const w = f.contentWindow, d = f.contentDocument;
+  w.addEventListener('error', e => log('ERROR: ' + e.message + ' @ ' + (e.filename || '').split('/').pop() + ':' + e.lineno));
+  w.addEventListener('unhandledrejection', e => log('REJECTION: ' + (e.reason && e.reason.message || e.reason)));
+  const $ = id => d.getElementById(id);
+  const click = sel => { const el = typeof sel === 'string' ? d.querySelector(sel) : sel; if (!el) { log('MISSING element ' + sel); return; } el.click(); };
+  const check = (name, ok) => log((ok ? 'ok   ' : 'FAIL ') + name);
+  const steps = [
+    () => { d.querySelectorAll('#nav button').forEach(b => click(b)); check('all nav views open', d.querySelectorAll('section.view.active').length === 1); },
+    () => { click('#nav [data-view="curriculum"]'); check('curriculum shows pass tests', /Take test/.test($('level-detail').innerHTML)); click('#levels .lvl:nth-child(2)'); check('level 2 selected', /Level 2/.test($('level-detail').innerHTML)); },
+    () => { click('#level-detail [data-groove]'); check('exercise opens player', d.querySelector('section.view.active').id === 'view-play' && $('seq').querySelectorAll('.cell').length > 0); },
+    () => { click('#p-next'); click('#p-prev'); click('#p-reset'); const c = $('seq').querySelector('.cell'); c.click(); check('grid cell edit', c.className.includes('v')); },
+    () => { click('#p-play'); check('player starts', $('p-play').textContent === 'Stop'); click('#p-play'); check('player stops', $('p-play').textContent === 'Play'); },
+    () => { $('p-score').checked = true; $('p-score').dispatchEvent(new w.Event('change')); check('scoring box shown', $('p-scorebox').style.display === 'block'); click('#touchpads [data-hit="sn"]'); },
+    () => { click('#nav [data-view="metro"]'); click('#m-play'); check('metronome starts', $('m-play').textContent === 'Stop'); click('#m-play'); click('[data-bpm-step="5"]'); check('metronome bpm step', $('m-bpm-val').textContent === '85'); },
+    () => { click('#nav [data-view="reading"]'); click('#q-play'); check('reading challenge options', $('q-opts').querySelectorAll('.opt').length === 3); click('#q-opts .opt'); click('#tt-check'); check('tab test shows notation', $('tt-notation').innerHTML.includes('<svg')); },
+    () => { click('#nav [data-view="rhythms"]'); click('#cats button:nth-child(3)'); check('rhythm category switch', $('glist').querySelectorAll('.gcard').length > 0); click('#glist .gcard'); check('rhythm card opens player', d.querySelector('section.view.active').id === 'view-play'); },
+    () => { click('#nav [data-view="songs"]'); $('sg-bpm-in').value = '112'; click('#sg-bpm-set'); check('song bpm set', $('sg-bpm').textContent === '112'); check('groove matches listed', $('sg-matches').querySelectorAll('.gcard').length >= 4); },
+    () => { $('sg-feel').value = 'shuffle'; $('sg-feel').dispatchEvent(new w.Event('change')); check('shuffle matches', /Shuffle/.test($('sg-matches').innerHTML)); $('sg-feel').value = '68'; $('sg-feel').dispatchEvent(new w.Event('change')); check('6/8 matches open at tripled tempo', /opens at 336/.test($('sg-matches').innerHTML)); },
+    () => { $('sg-q').value = 'Money Pink Floyd'; $('sg-yt').value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'; click('#sg-yt-go'); check('youtube embed', $('sg-video').innerHTML.includes('embed/dQw4w9WgXcQ')); },
+    async () => { for (let i = 0; i < 5; i++) { click('#sg-tap'); await new Promise(r => setTimeout(r, 500)); } check('tap tempo about 120 (got ' + $('sg-bpm').textContent + ')', Math.abs(+$('sg-bpm').textContent - 120) <= 4); },
+    () => { $('sg-notes').value = 'Verse core beat'; click('#sg-save'); check('song saved', $('sg-saved').querySelectorAll('.gcard').length === 1); click('#sg-saved .gcard'); click('#sg-saved [data-song-del]'); check('song removed', $('sg-saved').querySelectorAll('.gcard').length === 0); },
+    () => { click('#sg-click'); check('click at tempo opens metronome', d.querySelector('section.view.active').id === 'view-metro' && $('m-play').textContent === 'Stop'); click('#m-play'); },
+    () => { click('#nav [data-view="practice"]'); click('#pl-go'); check('weekly plan', /Day 1/.test($('pl-out').innerHTML)); click('#td-go'); check('today session', /Warm up/.test($('td-out').innerHTML)); $('lg-min').value = '30'; click('#lg-add'); check('log entry', /30 min/.test($('lg-list').innerHTML)); },
+    () => { click('#nav [data-view="songs"]'); $('sg-q').value = 'Test Song - Tester'; $('sg-bpm-in').value = '90'; click('#sg-bpm-set'); click('#sg-log'); check('log play along jumps to practice', d.querySelector('section.view.active').id === 'view-practice' && $('lg-focus').value === 'Song play along'); },
+    () => { click('#nav [data-view="badges"]'); check('badges rendered', $('badges').querySelectorAll('.badge').length > 15); click('#nav [data-view="home"]'); check('home next step', /Level 1/.test($('home-next').innerHTML)); },
+    () => { click('#nav [data-view="curriculum"]'); click('#level-detail [data-test]'); check('pass test starts', /Pass test/.test($('p-status').innerHTML)); click('#p-test-cancel'); check('pass test cancelled', !/Pass test/.test($('p-status').innerHTML)); },
+    () => { click('#nav [data-view="theory"]'); d.querySelector('#theory [data-pad="sn"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); click('#nav [data-view="kit3d"]'); check('kit3d attempted load', /3D|Drag|library/.test($('k3-msg').textContent)); },
+  ];
+  let i = 0;
+  const run = () => {
+    if (i >= steps.length) { log('DONE ' + out.filter(x => x.startsWith('FAIL') || x.startsWith('ERROR') || x.startsWith('REJECTION') || x.startsWith('MISSING')).length + ' problems'); return; }
+    let p; try { p = steps[i]() } catch (e) { log('EXCEPTION in step ' + (i + 1) + ': ' + e.message); }
+    i++; Promise.resolve(p).then(() => setTimeout(run, 150));
+  };
+  setTimeout(run, 300);
+});
+</script>
